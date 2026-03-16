@@ -142,13 +142,14 @@ UltraXReal/
 
 Contributions welcome! Some ideas:
 
+- [x] App icon design
+- [x] DMG packaging
 - [ ] Auto-detect XReal Air connection via IOKit USB monitoring
 - [ ] Auto-enable when glasses connect, disable when disconnected
 - [ ] Custom resolution input
 - [ ] Window management helpers (snap to left/right halves)
-- [ ] App icon design
 - [ ] Homebrew cask formula
-- [ ] DMG packaging with background image
+- [ ] DMG background image for prettier install experience
 
 ## References
 
