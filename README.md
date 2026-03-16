@@ -9,6 +9,15 @@ No head tracking. No IMU. No bloatware. Just a clean, static ultrawide HUD.
 ![macOS](https://img.shields.io/badge/macOS-13.0%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
+[![Download DMG](https://img.shields.io/github/v/release/DannyDesert/XReal-Ultrawide?label=Download%20DMG&color=brightgreen&style=for-the-badge)](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg)
+
+---
+
+## Download
+
+**[Download UltraXReal-v1.0.0.dmg](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg)** — Open the DMG, drag to Applications, launch. That's it.
+
+> On first launch, macOS may warn about an unidentified developer. Right-click the app > **Open** to bypass.
 
 ---
 
