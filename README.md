@@ -33,7 +33,11 @@ That's it. Launch **UltraXReal** from Launchpad or Applications.
 
 **[Download UltraXReal-v1.0.0.dmg](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg)** — Open the DMG, drag to Applications, launch.
 
-> On first launch, macOS may warn about an unidentified developer. Right-click the app > **Open** to bypass.
+> **Gatekeeper warning?** macOS will block the first launch because the app isn't notarized (private API apps can't be). Fix it with:
+> ```bash
+> xattr -cr /Applications/UltraXReal.app
+> ```
+> Or: **System Settings > Privacy & Security**, scroll down, click **"Open Anyway"** next to UltraXReal.
 
 ---
 
