@@ -18,9 +18,20 @@ No head tracking. No IMU. No bloatware. Just a clean, static ultrawide HUD.
 
 ---
 
-## Download
+## Install
 
-**[Download UltraXReal-v1.0.0.dmg](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg)** — Open the DMG, drag to Applications, launch. That's it.
+### Homebrew (recommended)
+
+```bash
+brew tap DannyDesert/ultraxreal
+brew install --cask ultraxreal
+```
+
+That's it. Launch **UltraXReal** from Launchpad or Applications.
+
+### Direct Download
+
+**[Download UltraXReal-v1.0.0.dmg](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg)** — Open the DMG, drag to Applications, launch.
 
 > On first launch, macOS may warn about an unidentified developer. Right-click the app > **Open** to bypass.
 
@@ -149,11 +160,11 @@ Contributions welcome! Some ideas:
 
 - [x] App icon design
 - [x] DMG packaging
+- [x] Homebrew cask formula
 - [ ] Auto-detect XReal Air connection via IOKit USB monitoring
 - [ ] Auto-enable when glasses connect, disable when disconnected
 - [ ] Custom resolution input
 - [ ] Window management helpers (snap to left/right halves)
-- [ ] Homebrew cask formula
 - [ ] DMG background image for prettier install experience
 
 ## References
