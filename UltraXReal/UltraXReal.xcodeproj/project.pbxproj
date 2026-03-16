@@ -15,6 +15,7 @@
 		A10000010000000000000006 /* DisplayResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000006 /* DisplayResolution.swift */; };
 		A10000010000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007 /* Assets.xcassets */; };
 		A10000010000000000000008 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008 /* CoreGraphics.framework */; };
+		A10000010000000000000009 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000D /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		A2000001000000000000000A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000001000000000000000B /* UltraXReal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UltraXReal.entitlements; sourceTree = "<group>"; };
 		A2000001000000000000000C /* UltraXReal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UltraXReal.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2000001000000000000000D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000010000000000000001 /* UltraXRealApp.swift */,
+				A2000001000000000000000D /* AppDelegate.swift */,
 				A20000010000000000000002 /* MenuBarView.swift */,
 				A20000010000000000000003 /* VirtualDisplayManager.swift */,
 				A20000010000000000000004 /* DisplayMirrorHelper.swift */,
@@ -161,6 +164,7 @@
 				A10000010000000000000004 /* DisplayMirrorHelper.swift in Sources */,
 				A10000010000000000000005 /* Settings.swift in Sources */,
 				A10000010000000000000006 /* DisplayResolution.swift in Sources */,
+				A10000010000000000000009 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
