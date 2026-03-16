@@ -6,11 +6,15 @@ Turn your XReal Air glasses into a 21:9 ultrawide monitor. UltraXReal creates a 
 
 No head tracking. No IMU. No bloatware. Just a clean, static ultrawide HUD.
 
-![macOS](https://img.shields.io/badge/macOS-13.0%2B-blue)
-![Swift](https://img.shields.io/badge/Swift-5.9-orange)
-![License](https://img.shields.io/badge/License-MIT-green)
-
-[![Download DMG](https://img.shields.io/github/v/release/DannyDesert/XReal-Ultrawide?label=Download%20DMG&color=brightgreen&style=for-the-badge)](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg)
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-13.0%2B-blue" alt="macOS">
+  <img src="https://img.shields.io/badge/Swift-5.9-orange" alt="Swift">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+  <br><br>
+  <a href="https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg">
+    <img src="https://img.shields.io/github/v/release/DannyDesert/XReal-Ultrawide?label=Download%20DMG&color=brightgreen&style=for-the-badge" alt="Download DMG">
+  </a>
+</p>
 
 ---
 
