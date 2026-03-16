@@ -76,11 +76,17 @@ final class VirtualDisplayManager: ObservableObject {
         descriptor.queue = displayQueue
 
         // Create display modes
-        let nativeMode = CGVirtualDisplayMode(
+        guard let nativeMode = CGVirtualDisplayMode(
             width: resolution.width,
             height: resolution.height,
             refreshRate: resolution.refreshRate
-        )
+        ) else {
+            DispatchQueue.main.async { [weak self] in
+                self?.lastError = "Failed to create display mode."
+                self?.postErrorNotification(self?.lastError ?? "Unknown error")
+            }
+            return
+        }
 
         // Create settings with available modes
         let settings = CGVirtualDisplaySettings()
@@ -96,9 +102,9 @@ final class VirtualDisplayManager: ObservableObject {
         }
 
         // Apply settings (modes)
-        let applied = display.applySettings(settings)
+        let applied = display.apply(settings)
         if !applied {
-            print("Warning: applySettings returned false — display may not have all modes available.")
+            print("Warning: apply(settings) returned false — display may not have all modes available.")
         }
 
         let displayID = display.displayID
