@@ -1,0 +1,40 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserdata
+*.xcworkspace
+!*.xcodeproj/project.pbxproj
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Xcode Archives
+*.xcarchive
+
+# Build artifacts
+*.app
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Misc
+*.swp
+*~
+.vscode/
+.idea/
