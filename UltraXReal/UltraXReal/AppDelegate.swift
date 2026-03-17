@@ -103,17 +103,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleDisplay() {
         if displayManager.isActive {
+            // Unmirror the Air before disabling
+            if let xrealID = DisplayMirrorHelper.findXRealDisplay(excludingDisplayID: displayManager.currentDisplayID) {
+                DisplayMirrorHelper.unmirror(displayID: xrealID)
+            }
             displayManager.disable()
             settings.displayWasEnabled = false
         } else {
             displayManager.enable(resolution: settings.selectedResolution)
             settings.displayWasEnabled = true
+
+            // Auto-mirror to XReal Air after display is created
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                self?.autoMirrorToXReal()
+            }
         }
 
         // Update icon tint
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             self?.updateIcon()
             self?.buildMenu()
+        }
+    }
+
+    private func autoMirrorToXReal() {
+        guard let virtualID = displayManager.currentDisplayID else { return }
+        if let xrealID = DisplayMirrorHelper.findXRealDisplay(excludingDisplayID: virtualID) {
+            let success = DisplayMirrorHelper.mirror(virtualDisplayID: virtualID, onto: xrealID)
+            if success {
+                print("Auto-mirrored virtual display \(virtualID) to XReal Air \(xrealID)")
+            } else {
+                print("Failed to auto-mirror to XReal Air")
+            }
+        } else {
+            print("XReal Air display not found — use Mirror to XReal Air manually")
         }
     }
 
@@ -129,10 +152,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func mirrorToXReal() {
-        guard let virtualID = displayManager.currentDisplayID else { return }
-        if let xrealID = DisplayMirrorHelper.findXRealDisplay() {
-            DisplayMirrorHelper.mirror(virtualDisplayID: virtualID, onto: xrealID)
-        }
+        autoMirrorToXReal()
     }
 
     @objc private func toggleLaunchAtLogin(_ sender: NSMenuItem) {

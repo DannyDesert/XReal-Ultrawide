@@ -7,36 +7,52 @@ import Foundation
 /// Falls back gracefully if mirroring cannot be automated.
 enum DisplayMirrorHelper {
 
+    // Known XReal/Nreal vendor IDs (USB vendor ID space)
+    private static let xrealVendorIDs: Set<UInt32> = [
+        13895, // 0x3647 — XReal Air (observed)
+        10462, // 0x28DE — alternate
+        7531,  // 0x1D6B — alternate
+    ]
+
     /// Attempts to find the XReal Air display among online displays.
-    /// XReal Air typically identifies as a 1920×1080 display via USB-C DisplayPort.
-    static func findXRealDisplay() -> CGDirectDisplayID? {
+    /// Uses vendor ID matching first, falls back to 1920×1080 non-builtin heuristic.
+    static func findXRealDisplay(excludingDisplayID: CGDirectDisplayID? = nil) -> CGDirectDisplayID? {
         var displayIDs = [CGDirectDisplayID](repeating: 0, count: 16)
         var displayCount: UInt32 = 0
 
         let err = CGGetOnlineDisplayList(16, &displayIDs, &displayCount)
         guard err == .success else { return nil }
 
+        // First pass: match by vendor ID
         for i in 0..<Int(displayCount) {
             let id = displayIDs[i]
-            let width = CGDisplayPixelsWide(id)
-            let height = CGDisplayPixelsHigh(id)
+            if id == excludingDisplayID { continue }
+            if CGDisplayIsBuiltin(id) != 0 { continue }
 
-            // XReal Air presents as 1920x1080 — skip the built-in display
-            // and any virtual displays we created
-            // CGDisplayIsBuiltin returns boolean_t (UInt32), not Bool
-            if width == 1920 && height == 1080 && CGDisplayIsBuiltin(id) == 0 {
+            let vendor = CGDisplayVendorNumber(id)
+            if xrealVendorIDs.contains(vendor) {
                 return id
             }
         }
+
+        // Second pass: fall back to first external 1920×1080 display
+        // that isn't our virtual display or the built-in
+        for i in 0..<Int(displayCount) {
+            let id = displayIDs[i]
+            if id == excludingDisplayID { continue }
+            if CGDisplayIsBuiltin(id) != 0 { continue }
+
+            let width = CGDisplayPixelsWide(id)
+            let height = CGDisplayPixelsHigh(id)
+            if width == 1920 && height == 1080 {
+                return id
+            }
+        }
+
         return nil
     }
 
     /// Mirror the virtual display onto the target physical display.
-    ///
-    /// - Parameters:
-    ///   - virtualDisplayID: The CGDirectDisplayID of our virtual display
-    ///   - targetDisplayID: The CGDirectDisplayID of the XReal Air
-    /// - Returns: true if mirroring was configured successfully
     @discardableResult
     static func mirror(virtualDisplayID: CGDirectDisplayID, onto targetDisplayID: CGDirectDisplayID) -> Bool {
         var config: CGDisplayConfigRef?
@@ -46,7 +62,6 @@ enum DisplayMirrorHelper {
             return false
         }
 
-        // Configure the target (XReal Air) to mirror the virtual display
         let mirrorErr = CGConfigureDisplayMirrorOfDisplay(config, targetDisplayID, virtualDisplayID)
         guard mirrorErr == .success else {
             CGCancelDisplayConfiguration(config)
@@ -67,7 +82,6 @@ enum DisplayMirrorHelper {
             return false
         }
 
-        // Setting mirror to kCGNullDirectDisplay removes mirroring
         let err = CGConfigureDisplayMirrorOfDisplay(config, displayID, kCGNullDirectDisplay)
         guard err == .success else {
             CGCancelDisplayConfiguration(config)
@@ -78,5 +92,4 @@ enum DisplayMirrorHelper {
     }
 }
 
-/// CGDirectDisplayID constant for "no display"
 private let kCGNullDirectDisplay: CGDirectDisplayID = 0
