@@ -1,20 +1,37 @@
 # UltraXReal
 
-**A free, open-source macOS menu bar app that creates a virtual ultrawide display for XReal Air AR glasses.**
-
-Turn your XReal Air glasses into a 21:9 ultrawide monitor. UltraXReal creates a virtual 2560×1080 display that macOS scales onto the glasses' 1920×1080 panel — giving you 33% more horizontal workspace with no extra hardware.
-
-No head tracking. No IMU. No bloatware. Just a clean, static ultrawide HUD.
+**Open-source Nebula replacement for macOS. Static ultrawide + spatial head-tracked floating display for XReal Air glasses.**
 
 <p align="center">
   <img src="https://img.shields.io/badge/macOS-13.0%2B-blue" alt="macOS">
   <img src="https://img.shields.io/badge/Swift-5.9-orange" alt="Swift">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   <br><br>
-  <a href="https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg">
+  <a href="https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v2.0.0.dmg">
     <img src="https://img.shields.io/github/v/release/DannyDesert/XReal-Ultrawide?label=Download%20DMG&color=brightgreen&style=for-the-badge" alt="Download DMG">
   </a>
 </p>
+
+---
+
+## Two Modes
+
+### Static Ultrawide (v1)
+Turn your XReal Air into a 21:9 ultrawide monitor. Creates a virtual 2560x1080 display that mirrors to the glasses. No head tracking — a clean, static HUD.
+
+### Spatial Floating Display (v2) — NEW
+The display floats in space. Turn your head and it stays put. Lean forward to zoom in. Uses the glasses' built-in IMU (gyroscope + accelerometer) for 60Hz head tracking with a Metal rendering pipeline.
+
+```
+                        STATIC MODE                              SPATIAL MODE
+┌──────────────────────────────────┐    ┌──────────────────────────────────────────┐
+│  CGVirtualDisplay (2560x1080)    │    │  CGVirtualDisplay (3840x2160 canvas)     │
+│         ↓ macOS mirror ↓         │    │         ↓ ScreenCaptureKit ↓             │
+│  XReal Air (1920x1080)           │    │  Metal shader (viewport crop + zoom)     │
+│                                  │    │         ↓ head tracking ↓                │
+│  Head-locked. Simple. Fast.      │    │  XReal Air (1920x1080 viewport)          │
+└──────────────────────────────────┘    └──────────────────────────────────────────┘
+```
 
 ---
 
@@ -27,60 +44,93 @@ brew tap DannyDesert/ultraxreal
 brew install --cask ultraxreal
 ```
 
-That's it. Launch **UltraXReal** from Launchpad or Applications.
-
 ### Direct Download
 
-**[Download UltraXReal-v1.0.0.dmg](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v1.0.0.dmg)** — Open the DMG, drag to Applications, launch.
+**[Download UltraXReal-v2.0.0.dmg](https://github.com/DannyDesert/XReal-Ultrawide/releases/latest/download/UltraXReal-v2.0.0.dmg)** — Open the DMG, drag to Applications, launch.
 
-> **Gatekeeper warning?** macOS will block the first launch because the app isn't notarized (private API apps can't be). Fix it with:
+> **Gatekeeper warning?** macOS will block the first launch because the app uses a private API and isn't notarized. Fix:
 > ```bash
 > xattr -cr /Applications/UltraXReal.app
 > ```
-> Or: **System Settings > Privacy & Security**, scroll down, click **"Open Anyway"** next to UltraXReal.
+> Or: **System Settings > Privacy & Security**, scroll down, click **"Open Anyway"**.
 
 ---
 
-## What It Does
-
-1. Creates a virtual 2560×1080 (21:9) display using Apple's `CGVirtualDisplay` API
-2. The virtual display appears in **System Settings → Displays** as a real monitor
-3. Drag windows onto it, use Spaces, full-screen apps — everything works
-4. Mirror it to your XReal Air glasses via USB-C for an ultrawide desktop in your face
-
-```
-┌─────────────────────────────────────────────────┐
-│  MENU BAR APP                                   │
-│  SwiftUI · Toggle on/off · Resolution picker    │
-├─────────────────────────────────────────────────┤
-│  VIRTUAL DISPLAY ENGINE                         │
-│  CGVirtualDisplay · Display mirroring           │
-└─────────────────────────────────────────────────┘
-         ▼ XReal Air (USB-C DisplayPort) ▼
-```
-
 ## Features
 
-- **Menu bar app** — lives in your menu bar, no dock icon clutter
-- **One-click toggle** — enable/disable the ultrawide display instantly
-- **Multiple resolutions:**
-  - 2560 × 1080 (21:9) — default, best balance
-  - 3440 × 1440 (21:9 HiDPI) — sharper text
-  - 3840 × 1080 (32:9) — super ultrawide
-- **Auto-mirror** — mirrors the virtual display to your XReal Air automatically
-- **Launch at login** — set it and forget it
-- **Sleep/wake aware** — recreates the display after your Mac wakes up
-- **Clean teardown** — no phantom displays left behind when you quit
+**Menu Bar App**
+- Lives in your menu bar — no dock icon clutter
+- Green icon = static mode active, cyan 3D icon = spatial mode active
+- One-click toggle between modes
+
+**Static Ultrawide Mode**
+- Virtual 2560x1080, 3440x1440, or 3840x1080 display
+- Auto-mirrors to XReal Air on enable
+- Sleep/wake aware — recreates display after wake
+
+**Spatial Floating Mode**
+- 3840x2160 virtual canvas (larger than what you see)
+- 1920x1080 viewport moves with your head orientation
+- Lean-to-zoom: tilt forward to magnify content (1x–2.5x)
+- Recenter: **Cmd+Shift+R** global hotkey
+- Configurable sensitivity (Low / Medium / High)
+- Configurable smoothing (Responsive / Balanced / Smooth)
+- Auto-detects IMU — grays out spatial option if not available
+
+**General**
+- Launch at login
+- Clean teardown on quit
+- macOS 13.0+ (Ventura through Tahoe)
+
+---
+
+## Usage
+
+### Static Mode
+1. Connect XReal Air via USB-C
+2. Click the menu bar icon → **Enable Ultrawide (Static)**
+3. A virtual ultrawide display appears and auto-mirrors to the glasses
+4. Drag windows onto it — you have an ultrawide desktop in your glasses
+
+### Spatial Mode
+1. Connect XReal Air via USB-C
+2. Click the menu bar icon → **Enable Spatial (Floating)**
+3. macOS prompts for screen recording permission (needed for capture) — approve it
+4. The display floats in space — turn your head, it stays anchored
+5. Press **Cmd+Shift+R** to recenter
+6. Adjust sensitivity and smoothing in **Spatial Settings** submenu
+
+---
+
+## How It Works
+
+### Virtual Display
+Uses Apple's private `CGVirtualDisplay` API — the same API used by [BetterDisplay](https://github.com/waydabber/BetterDisplay) and [FluffyDisplay](https://github.com/tml1024/FluffyDisplay). Stable across 4+ major macOS releases.
+
+### Head Tracking (Spatial Mode)
+The XReal Air glasses contain an ICM-42688-P IMU (gyroscope + accelerometer). UltraXReal reads this sensor data over USB HID using a vendored C driver from [xrealair-sdk-macos](https://github.com/adidoes/xrealair-sdk-macos), with [Fusion](https://github.com/xioTechnologies/Fusion) Madgwick filter for sensor fusion.
+
+### Rendering Pipeline (Spatial Mode)
+```
+XReal Air IMU → USB HID → hidapi → Madgwick AHRS → quaternion (60Hz)
+                                                         ↓
+CGVirtualDisplay → ScreenCaptureKit → IOSurface → Metal viewport shader
+                                                         ↓
+                                           Fullscreen NSWindow on XReal Air
+```
+
+The Metal fragment shader crops a 1920x1080 viewport from the 3840x2160 canvas based on head orientation. The viewport position updates every frame, independent of capture frame rate, so head tracking always feels responsive.
+
+---
 
 ## Requirements
 
 - **macOS 13.0 (Ventura)** or later
-- **XReal Air** glasses (original, Air 2, or Air 2 Pro) connected via USB-C
+- **XReal Air** glasses (original, Air 2, Air 2 Pro, or Air 2 Ultra) via USB-C
+- **Screen recording permission** (for spatial mode — macOS will prompt on first use)
 - **Xcode 15+** to build from source
 
-## Installation
-
-### Build from Source
+## Build from Source
 
 ```bash
 git clone https://github.com/DannyDesert/XReal-Ultrawide.git
@@ -92,46 +142,9 @@ open UltraXReal/UltraXReal.xcodeproj
 2. Build and run (`Cmd + R`)
 3. The UltraXReal icon appears in your menu bar
 
-### Pre-built Release
+All C dependencies (hidapi, Fusion, xreal-imu) are vendored — no external packages to install.
 
-Check [Releases](https://github.com/DannyDesert/XReal-Ultrawide/releases) for pre-built `.app` bundles.
-
-> **Note:** This app uses Apple's private `CGVirtualDisplay` API and cannot be distributed via the Mac App Store. Install from source or from GitHub Releases.
-
-## Usage
-
-1. **Connect** your XReal Air glasses via USB-C
-2. **Click** the display icon in the menu bar
-3. **Click** "Enable Ultrawide"
-4. A new "UltraXReal" display appears in System Settings → Displays
-5. **Drag windows** onto the virtual display, or set it as your primary display
-6. **Click** "Mirror to XReal Air" to send the ultrawide to your glasses
-7. Done — you now have an ultrawide desktop in your AR glasses
-
-### Manual Mirroring
-
-If auto-mirror doesn't work for your setup:
-
-1. Open **System Settings → Displays**
-2. Click **Arrange**
-3. Hold **Option** and drag the UltraXReal display onto your XReal Air display
-4. The glasses now show the ultrawide desktop
-
-## How It Works
-
-UltraXReal uses Apple's private `CGVirtualDisplay` API — the same API used by [BetterDisplay](https://github.com/waydabber/BetterDisplay), [FluffyDisplay](https://github.com/tml1024/FluffyDisplay), and Chromium's test infrastructure. This API:
-
-- Creates a virtual display that macOS treats as a real, physical monitor
-- Supports custom resolutions, refresh rates, and HiDPI scaling
-- Has been stable across macOS Ventura, Sonoma, Sequoia, and Tahoe
-
-The app then uses `CGConfigureDisplayMirrorOfDisplay` to mirror the virtual ultrawide onto the XReal Air's physical 1920×1080 panel. macOS handles the scaling — the glasses show a compressed ultrawide image.
-
-### Why Not Nebula / XReal's Official App?
-
-- Nebula is heavy, requires head tracking, and doesn't support a simple static ultrawide
-- UltraXReal is ~200 lines of code, does one thing well, and gets out of your way
-- No IMU, no 3DoF, no spatial computing — just more screen real estate
+---
 
 ## Project Structure
 
@@ -139,45 +152,55 @@ The app then uses `CGConfigureDisplayMirrorOfDisplay` to mirror the virtual ultr
 UltraXReal/
 ├── UltraXReal.xcodeproj
 └── UltraXReal/
-    ├── UltraXRealApp.swift          # @main, menu bar setup
-    ├── MenuBarView.swift             # SwiftUI menu bar dropdown
-    ├── VirtualDisplayManager.swift   # CGVirtualDisplay lifecycle
-    ├── DisplayMirrorHelper.swift     # Automated display mirroring
-    ├── DisplayResolution.swift       # Resolution presets
-    ├── Settings.swift                # UserDefaults wrapper
-    ├── CGVirtualDisplay-Bridge.h     # Bridging header for private API
-    ├── Assets.xcassets/
-    ├── Info.plist
-    └── UltraXReal.entitlements
+    ├── UltraXRealApp.swift              # @main entry point
+    ├── AppDelegate.swift                # Menu bar, mode toggle, lifecycle
+    ├── VirtualDisplayManager.swift      # CGVirtualDisplay lifecycle
+    ├── DisplayMirrorHelper.swift        # Display mirroring (static mode)
+    ├── DisplayResolution.swift          # Resolution presets
+    ├── Settings.swift                   # UserDefaults persistence
+    ├── CGVirtualDisplay-Bridge.h        # Bridging header for private API
+    │
+    ├── Spatial/                         # Spatial floating display
+    │   ├── XRealIMUService.swift        # USB HID IMU driver wrapper
+    │   ├── SpatialTracker.swift         # Orientation → viewport + zoom
+    │   ├── SpatialRenderer.swift        # SCK → Metal → output pipeline
+    │   └── SpatialShaders.metal         # Viewport crop fragment shader
+    │
+    └── Vendor/                          # Vendored C dependencies
+        ├── hidapi/                      # USB HID library (macOS IOKit)
+        ├── fusion/                      # Madgwick AHRS sensor fusion
+        └── xreal-imu/                  # XReal Air IMU protocol driver
 ```
 
 ## Known Limitations
 
-- **Private API** — `CGVirtualDisplay` is undocumented by Apple. It could break in a future macOS update (though it's been stable for 4+ major releases).
-- **No App Store** — Private APIs mean this must be distributed outside the App Store.
-- **No head tracking** — This is intentional. UltraXReal is a static HUD. For head-tracked virtual displays, use Nebula or similar.
-- **Display mirroring** — Auto-mirror works in most cases, but some display configurations may require manual mirroring in System Settings.
+- **Private API** — `CGVirtualDisplay` is undocumented by Apple. Could break in a future macOS update (stable for 4+ releases so far).
+- **No App Store** — Private API + USB HID access means distribution is via GitHub/Homebrew only.
+- **Spatial mode requires screen recording permission** — macOS will prompt on first use. If denied, spatial mode won't work.
+- **Lean-to-zoom is a heuristic** — It uses pitch angle as a depth proxy, not true positional tracking. Works well at a desk, less so standing/walking.
+- **No 6DoF** — The original XReal Air only has 3DoF (rotation). True positional tracking would require the Air 2 Ultra's SLAM cameras.
 
 ## Contributing
 
 Contributions welcome! Some ideas:
 
-- [x] App icon design
-- [x] DMG packaging
-- [x] Homebrew cask formula
-- [ ] Auto-detect XReal Air connection via IOKit USB monitoring
-- [ ] Auto-enable when glasses connect, disable when disconnected
-- [ ] Custom resolution input
+- [ ] Auto-detect XReal Air connect/disconnect via IOKit USB monitoring
+- [ ] Frame prediction (extrapolate 1 frame ahead to reduce perceived latency)
+- [ ] CGDisplayStream fallback for macOS 13 ScreenCaptureKit compatibility
+- [ ] Custom canvas size input for spatial mode
+- [ ] Calibration UI for IMU sensor offsets
 - [ ] Window management helpers (snap to left/right halves)
-- [ ] DMG background image for prettier install experience
+- [ ] DMG background image
 
 ## References
 
-- [FluffyDisplay](https://github.com/tml1024/FluffyDisplay) — Simplest CGVirtualDisplay Swift wrapper
-- [Lumen](https://github.com/trollzem/Lumen) — Sunshine fork with vd_helper subprocess pattern
+- [xrealair-sdk-macos](https://github.com/adidoes/xrealair-sdk-macos) — C driver for XReal Air IMU on macOS
+- [Fusion](https://github.com/xioTechnologies/Fusion) — Madgwick AHRS sensor fusion library
+- [sidecar-portrait-macos](https://github.com/toho-stdio/sidecar-portrait-macos) — ScreenCaptureKit → Metal → external display pattern
+- [Breezy Desktop](https://github.com/wheaney/breezy-desktop) — Linux spatial desktop for XR glasses
+- [FluffyDisplay](https://github.com/tml1024/FluffyDisplay) — Simple CGVirtualDisplay wrapper
 - [BetterDisplay](https://github.com/waydabber/BetterDisplay) — Production virtual display manager
-- [macOS Headers — CGVirtualDisplay](https://github.com/w0lfschild/macOS_headers/blob/master/macOS/Frameworks/CoreGraphics/1336/CGVirtualDisplay.h) — Reverse-engineered private API headers
-- [Chromium virtual_display_mac_util.mm](https://chromium.googlesource.com/chromium/src/+/d441ddf663e568fe8383d59a31e0dfacb9d9535b/ui/display/mac/test/virtual_display_mac_util.mm) — Google's test implementation
+- [macOS Headers — CGVirtualDisplay](https://github.com/w0lfschild/macOS_headers/blob/master/macOS/Frameworks/CoreGraphics/1336/CGVirtualDisplay.h) — Private API headers
 
 ## License
 
