@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		A10000010000000000000001 /* UltraXRealApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* UltraXRealApp.swift */; };
-		A10000010000000000000002 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000002 /* MenuBarView.swift */; };
 		A10000010000000000000003 /* VirtualDisplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000003 /* VirtualDisplayManager.swift */; };
 		A10000010000000000000004 /* DisplayMirrorHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000004 /* DisplayMirrorHelper.swift */; };
 		A10000010000000000000005 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000005 /* Settings.swift */; };
@@ -16,6 +15,22 @@
 		A10000010000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007 /* Assets.xcassets */; };
 		A10000010000000000000008 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008 /* CoreGraphics.framework */; };
 		A10000010000000000000009 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000D /* AppDelegate.swift */; };
+		B10000010000000000000001 /* XRealIMUService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000001 /* XRealIMUService.swift */; };
+		B10000010000000000000002 /* SpatialTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000002 /* SpatialTracker.swift */; };
+		B10000010000000000000003 /* SpatialRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000003 /* SpatialRenderer.swift */; };
+		B10000010000000000000004 /* SpatialShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000004 /* SpatialShaders.metal */; };
+		B10000010000000000000010 /* hid.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000010 /* hid.c */; };
+		B10000010000000000000020 /* FusionAhrs.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000020 /* FusionAhrs.c */; };
+		B10000010000000000000021 /* FusionCompass.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000021 /* FusionCompass.c */; };
+		B10000010000000000000022 /* FusionOffset.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000022 /* FusionOffset.c */; };
+		B10000010000000000000030 /* device.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000030 /* device.c */; };
+		B10000010000000000000031 /* device_imu.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000031 /* device_imu.c */; };
+		B10000010000000000000032 /* hid_ids.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000032 /* hid_ids.c */; };
+		B10000010000000000000033 /* crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000033 /* crc32.c */; };
+		B1F000010000000000000001 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F000010000000000000001 /* IOKit.framework */; };
+		B1F000010000000000000002 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F000010000000000000002 /* Metal.framework */; };
+		B1F000010000000000000003 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F000010000000000000003 /* MetalKit.framework */; };
+		B1F000010000000000000004 /* ScreenCaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F000010000000000000004 /* ScreenCaptureKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +47,35 @@
 		A2000001000000000000000B /* UltraXReal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UltraXReal.entitlements; sourceTree = "<group>"; };
 		A2000001000000000000000C /* UltraXReal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UltraXReal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000001000000000000000D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B20000010000000000000001 /* XRealIMUService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XRealIMUService.swift; sourceTree = "<group>"; };
+		B20000010000000000000002 /* SpatialTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialTracker.swift; sourceTree = "<group>"; };
+		B20000010000000000000003 /* SpatialRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialRenderer.swift; sourceTree = "<group>"; };
+		B20000010000000000000004 /* SpatialShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = SpatialShaders.metal; sourceTree = "<group>"; };
+		B20000010000000000000010 /* hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hid.c; sourceTree = "<group>"; };
+		B20000010000000000000011 /* hidapi.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hidapi.h; sourceTree = "<group>"; };
+		B20000010000000000000020 /* FusionAhrs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = FusionAhrs.c; sourceTree = "<group>"; };
+		B20000010000000000000021 /* FusionCompass.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = FusionCompass.c; sourceTree = "<group>"; };
+		B20000010000000000000022 /* FusionOffset.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = FusionOffset.c; sourceTree = "<group>"; };
+		B20000010000000000000023 /* Fusion.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Fusion.h; sourceTree = "<group>"; };
+		B20000010000000000000024 /* FusionAhrs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FusionAhrs.h; sourceTree = "<group>"; };
+		B20000010000000000000025 /* FusionAxes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FusionAxes.h; sourceTree = "<group>"; };
+		B20000010000000000000026 /* FusionCalibration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FusionCalibration.h; sourceTree = "<group>"; };
+		B20000010000000000000027 /* FusionCompass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FusionCompass.h; sourceTree = "<group>"; };
+		B20000010000000000000028 /* FusionConvention.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FusionConvention.h; sourceTree = "<group>"; };
+		B20000010000000000000029 /* FusionMath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FusionMath.h; sourceTree = "<group>"; };
+		B2000001000000000000002A /* FusionOffset.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FusionOffset.h; sourceTree = "<group>"; };
+		B20000010000000000000030 /* device.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = device.c; sourceTree = "<group>"; };
+		B20000010000000000000031 /* device_imu.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = device_imu.c; sourceTree = "<group>"; };
+		B20000010000000000000032 /* hid_ids.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hid_ids.c; sourceTree = "<group>"; };
+		B20000010000000000000033 /* crc32.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crc32.c; sourceTree = "<group>"; };
+		B20000010000000000000034 /* device.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = device.h; sourceTree = "<group>"; };
+		B20000010000000000000035 /* device_imu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = device_imu.h; sourceTree = "<group>"; };
+		B20000010000000000000036 /* hid_ids.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hid_ids.h; sourceTree = "<group>"; };
+		B20000010000000000000037 /* crc32.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = crc32.h; sourceTree = "<group>"; };
+		B2F000010000000000000001 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		B2F000010000000000000002 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		B2F000010000000000000003 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		B2F000010000000000000004 /* ScreenCaptureKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenCaptureKit.framework; path = System/Library/Frameworks/ScreenCaptureKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -40,6 +84,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000010000000000000008 /* CoreGraphics.framework in Frameworks */,
+				B1F000010000000000000001 /* IOKit.framework in Frameworks */,
+				B1F000010000000000000002 /* Metal.framework in Frameworks */,
+				B1F000010000000000000003 /* MetalKit.framework in Frameworks */,
+				B1F000010000000000000004 /* ScreenCaptureKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,12 +108,13 @@
 			children = (
 				A20000010000000000000001 /* UltraXRealApp.swift */,
 				A2000001000000000000000D /* AppDelegate.swift */,
-				A20000010000000000000002 /* MenuBarView.swift */,
 				A20000010000000000000003 /* VirtualDisplayManager.swift */,
 				A20000010000000000000004 /* DisplayMirrorHelper.swift */,
 				A20000010000000000000005 /* Settings.swift */,
 				A20000010000000000000006 /* DisplayResolution.swift */,
 				A20000010000000000000009 /* CGVirtualDisplay-Bridge.h */,
+				B40000010000000000000001 /* Spatial */,
+				B40000010000000000000005 /* Vendor */,
 				A20000010000000000000007 /* Assets.xcassets */,
 				A2000001000000000000000A /* Info.plist */,
 				A2000001000000000000000B /* UltraXReal.entitlements */,
@@ -77,6 +126,10 @@
 			isa = PBXGroup;
 			children = (
 				A20000010000000000000008 /* CoreGraphics.framework */,
+				B2F000010000000000000001 /* IOKit.framework */,
+				B2F000010000000000000002 /* Metal.framework */,
+				B2F000010000000000000003 /* MetalKit.framework */,
+				B2F000010000000000000004 /* ScreenCaptureKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -87,6 +140,69 @@
 				A2000001000000000000000C /* UltraXReal.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B40000010000000000000001 /* Spatial */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000001 /* XRealIMUService.swift */,
+				B20000010000000000000002 /* SpatialTracker.swift */,
+				B20000010000000000000003 /* SpatialRenderer.swift */,
+				B20000010000000000000004 /* SpatialShaders.metal */,
+			);
+			path = Spatial;
+			sourceTree = "<group>";
+		};
+		B40000010000000000000005 /* Vendor */ = {
+			isa = PBXGroup;
+			children = (
+				B40000010000000000000002 /* hidapi */,
+				B40000010000000000000003 /* fusion */,
+				B40000010000000000000004 /* xreal-imu */,
+			);
+			path = Vendor;
+			sourceTree = "<group>";
+		};
+		B40000010000000000000002 /* hidapi */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000011 /* hidapi.h */,
+				B20000010000000000000010 /* hid.c */,
+			);
+			path = hidapi;
+			sourceTree = "<group>";
+		};
+		B40000010000000000000003 /* fusion */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000023 /* Fusion.h */,
+				B20000010000000000000024 /* FusionAhrs.h */,
+				B20000010000000000000025 /* FusionAxes.h */,
+				B20000010000000000000026 /* FusionCalibration.h */,
+				B20000010000000000000027 /* FusionCompass.h */,
+				B20000010000000000000028 /* FusionConvention.h */,
+				B20000010000000000000029 /* FusionMath.h */,
+				B2000001000000000000002A /* FusionOffset.h */,
+				B20000010000000000000020 /* FusionAhrs.c */,
+				B20000010000000000000021 /* FusionCompass.c */,
+				B20000010000000000000022 /* FusionOffset.c */,
+			);
+			path = fusion;
+			sourceTree = "<group>";
+		};
+		B40000010000000000000004 /* xreal-imu */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000034 /* device.h */,
+				B20000010000000000000035 /* device_imu.h */,
+				B20000010000000000000036 /* hid_ids.h */,
+				B20000010000000000000037 /* crc32.h */,
+				B20000010000000000000030 /* device.c */,
+				B20000010000000000000031 /* device_imu.c */,
+				B20000010000000000000032 /* hid_ids.c */,
+				B20000010000000000000033 /* crc32.c */,
+			);
+			path = "xreal-imu";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -159,12 +275,23 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000010000000000000001 /* UltraXRealApp.swift in Sources */,
-				A10000010000000000000002 /* MenuBarView.swift in Sources */,
 				A10000010000000000000003 /* VirtualDisplayManager.swift in Sources */,
 				A10000010000000000000004 /* DisplayMirrorHelper.swift in Sources */,
 				A10000010000000000000005 /* Settings.swift in Sources */,
 				A10000010000000000000006 /* DisplayResolution.swift in Sources */,
 				A10000010000000000000009 /* AppDelegate.swift in Sources */,
+				B10000010000000000000001 /* XRealIMUService.swift in Sources */,
+				B10000010000000000000002 /* SpatialTracker.swift in Sources */,
+				B10000010000000000000003 /* SpatialRenderer.swift in Sources */,
+				B10000010000000000000004 /* SpatialShaders.metal in Sources */,
+				B10000010000000000000010 /* hid.c in Sources */,
+				B10000010000000000000020 /* FusionAhrs.c in Sources */,
+				B10000010000000000000021 /* FusionCompass.c in Sources */,
+				B10000010000000000000022 /* FusionOffset.c in Sources */,
+				B10000010000000000000030 /* device.c in Sources */,
+				B10000010000000000000031 /* device_imu.c in Sources */,
+				B10000010000000000000032 /* hid_ids.c in Sources */,
+				B10000010000000000000033 /* crc32.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -189,13 +316,21 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/UltraXReal/Vendor/hidapi",
+					"$(SRCROOT)/UltraXReal/Vendor/fusion",
+					"$(SRCROOT)/UltraXReal/Vendor/xreal-imu",
+					"$(SRCROOT)/UltraXReal/Vendor",
+				);
 				INFOPLIST_FILE = UltraXReal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
+				OTHER_LDFLAGS = "-weak_framework ScreenCaptureKit";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ultraxreal.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -222,13 +357,21 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/UltraXReal/Vendor/hidapi",
+					"$(SRCROOT)/UltraXReal/Vendor/fusion",
+					"$(SRCROOT)/UltraXReal/Vendor/xreal-imu",
+					"$(SRCROOT)/UltraXReal/Vendor",
+				);
 				INFOPLIST_FILE = UltraXReal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
+				OTHER_LDFLAGS = "-weak_framework ScreenCaptureKit";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ultraxreal.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

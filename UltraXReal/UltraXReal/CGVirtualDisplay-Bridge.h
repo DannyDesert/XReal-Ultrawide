@@ -61,4 +61,11 @@
 
 @end
 
+// MARK: - XReal IMU Driver (USB HID)
+
+#include "Vendor/hidapi/hidapi.h"
+#include "Vendor/xreal-imu/device.h"
+#include "Vendor/xreal-imu/device_imu.h"
+#include "Vendor/xreal-imu/hid_ids.h"
+
 #endif /* CGVirtualDisplay_Bridge_h */

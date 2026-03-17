@@ -61,6 +61,63 @@ final class VirtualDisplayManager: ObservableObject {
         }
     }
 
+    /// Create a large virtual canvas for spatial mode.
+    /// Physical size capped at 597×336mm for ScreenCaptureKit compatibility.
+    func enableSpatialCanvas(width: UInt32 = 3840, height: UInt32 = 2160) {
+        guard !isActive else { return }
+        lastError = nil
+
+        displayQueue.async { [weak self] in
+            self?.createSpatialDisplay(width: width, height: height)
+        }
+    }
+
+    private func createSpatialDisplay(width: UInt32, height: UInt32) {
+        let descriptor = CGVirtualDisplayDescriptor()
+        descriptor.vendorID = 0x1234
+        descriptor.productID = 0x5679  // Different product ID to distinguish from static mode
+        descriptor.serialNum = 2
+        descriptor.name = "UltraXReal Spatial"
+        descriptor.sizeInMillimeters = CGSize(width: 597, height: 336)  // 27" equivalent, SCK-safe
+        descriptor.maxPixelsWide = width
+        descriptor.maxPixelsHigh = height
+        descriptor.queue = displayQueue
+
+        guard let nativeMode = CGVirtualDisplayMode(
+            width: width, height: height, refreshRate: 60.0
+        ) else {
+            DispatchQueue.main.async { [weak self] in
+                self?.lastError = "Failed to create spatial display mode."
+                self?.postErrorNotification(self?.lastError ?? "Unknown error")
+            }
+            return
+        }
+
+        let settings = CGVirtualDisplaySettings()
+        settings.modes = [nativeMode]
+
+        guard let display = CGVirtualDisplay(descriptor: descriptor) else {
+            DispatchQueue.main.async { [weak self] in
+                self?.lastError = "Failed to create spatial virtual display."
+                self?.postErrorNotification(self?.lastError ?? "Unknown error")
+            }
+            return
+        }
+
+        let applied = display.apply(settings)
+        if !applied {
+            print("Warning: spatial display apply(settings) returned false")
+        }
+
+        let displayID = display.displayID
+
+        DispatchQueue.main.async { [weak self] in
+            self?.virtualDisplay = display
+            self?.isActive = true
+            self?.currentDisplayID = displayID
+        }
+    }
+
     // MARK: - Private: Display creation via bridging header
 
     private func createDisplay(resolution: DisplayResolution) {
