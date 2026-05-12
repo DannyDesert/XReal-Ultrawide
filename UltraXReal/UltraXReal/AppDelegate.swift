@@ -95,6 +95,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         mirrorItem.isEnabled = displayManager.isActive && !isSpatialActive
         menu.addItem(mirrorItem)
 
+        // Bring cursor onto the virtual display. In spatial mode the renderer
+        // owns the glasses panel directly, so the cursor sits invisibly on the
+        // built-in display by default — this menu item (and the auto-warp at
+        // mode activation) gets the user clicking on the virtual content fast.
+        let warpItem = NSMenuItem(title: "Move Cursor to Virtual Display",
+                                  action: #selector(warpCursorToVirtualDisplay),
+                                  keyEquivalent: "m")
+        warpItem.keyEquivalentModifierMask = [.command, .shift]
+        warpItem.target = self
+        warpItem.isEnabled = displayManager.isActive
+        menu.addItem(warpItem)
+
         menu.addItem(NSMenuItem.separator())
 
         // --- Spatial Settings submenu ---
@@ -316,9 +328,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.updateIcon()
             self.buildMenu()
 
-            // Auto-recenter after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Auto-recenter after a short delay, then warp the cursor onto the
+            // virtual display so the user can interact with what they see in
+            // the glasses without first navigating the cursor manually.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 tracker.recenter()
+                self?.warpCursorToVirtualDisplay()
             }
         }
     }
@@ -384,6 +399,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func mirrorToXReal() {
         autoMirrorToXReal()
+    }
+
+    /// Teleport the mouse cursor to the centre of the active virtual display.
+    /// Spatial mode renders directly onto the glasses panel and unmirrors the
+    /// XReal Air, so the cursor stays on the built-in display by default —
+    /// invisible to the user. This action (called automatically when entering
+    /// spatial, and bound to ⌘⇧M) puts the cursor where the user is looking.
+    @objc private func warpCursorToVirtualDisplay() {
+        guard let vid = displayManager.currentDisplayID else { return }
+        let bounds = CGDisplayBounds(vid)
+        CGWarpMouseCursorPosition(CGPoint(x: bounds.midX, y: bounds.midY))
+        CGAssociateMouseAndMouseCursorPosition(1)
     }
 
     @objc private func toggleLaunchAtLogin(_ sender: NSMenuItem) {

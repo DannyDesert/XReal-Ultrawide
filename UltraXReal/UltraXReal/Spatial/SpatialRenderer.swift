@@ -5,12 +5,15 @@ import CoreMedia
 import CoreVideo
 import ScreenCaptureKit
 import Combine
+import os
 
 /// Viewport uniform data passed to the Metal fragment shader.
 struct ViewportUniforms {
     var viewportOrigin: SIMD2<Float>  // normalized [0,1]
     var viewportSize: SIMD2<Float>    // normalized [0,1]
 }
+
+private let renderLog = OSLog(subsystem: "com.ultraxreal.app", category: "Renderer")
 
 /// Captures the virtual display via ScreenCaptureKit, applies head-tracking
 /// viewport transform in Metal, and renders to a fullscreen window on the XReal Air.
@@ -43,6 +46,10 @@ final class SpatialRenderer: NSObject, ObservableObject {
     // FPS counter
     private var frameCount = 0
     private var fpsTimer: Timer?
+
+    // Diagnostics — only mutated from the capture queue, no lock needed.
+    private var firstCompleteFrameLogged = false
+    private var lastLoggedStatus: SCFrameStatus?
 
     // Canvas dimensions
     let canvasWidth: Int
@@ -157,7 +164,10 @@ final class SpatialRenderer: NSObject, ObservableObject {
             return false
         }
 
-        metalView = MTKView(frame: CGRect(origin: .zero, size: xrealScreen.frame.size),
+        let screenFrame = xrealScreen.frame
+        print("[Renderer] XReal screen frame=\(screenFrame)")
+
+        metalView = MTKView(frame: CGRect(origin: .zero, size: screenFrame.size),
                             device: metalDevice)
         metalView.delegate = self
         metalView.framebufferOnly = true
@@ -166,20 +176,36 @@ final class SpatialRenderer: NSObject, ObservableObject {
         metalView.isPaused = false
         metalView.enableSetNeedsDisplay = false
 
-        outputWindow = NSWindow(
-            contentRect: xrealScreen.frame,
+        // KeyableBorderlessWindow overrides canBecomeKey/Main → true so MTKView
+        // gets active draw callbacks on macOS 26 Tahoe (where the default `false`
+        // for borderless windows leaves the render loop suspended).
+        let window = KeyableBorderlessWindow(
+            contentRect: screenFrame,
             styleMask: [.borderless],
             backing: .buffered,
             defer: false,
             screen: xrealScreen
         )
-        outputWindow?.level = .screenSaver
-        outputWindow?.isOpaque = true
-        outputWindow?.backgroundColor = .black
-        outputWindow?.contentView = metalView
-        outputWindow?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        outputWindow?.makeKeyAndOrderFront(nil)
+        // Above the shielding window — guaranteed to sit on top of everything,
+        // including spaces transitions and Mission Control. `.screenSaver` was
+        // demoted on Tahoe and got clamped by the window server.
+        window.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)
+        window.isOpaque = true
+        window.backgroundColor = .black
+        window.hasShadow = false
+        window.contentView = metalView
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        window.isMovable = false
+        window.isExcludedFromWindowsMenu = true
+        window.makeKeyAndOrderFront(nil)
 
+        // Force frame *after* orderFront — Tahoe re-clamps borderless windows
+        // whose initial contentRect has negative origins (XReal Air sits at
+        // global Cocoa coords like (-408, -1080) in our setup). Without this
+        // the window lands on the built-in display as a thin strip.
+        window.setFrame(screenFrame, display: true)
+
+        outputWindow = window
         return true
     }
 
@@ -210,8 +236,9 @@ final class SpatialRenderer: NSObject, ObservableObject {
 
     private func startCapture() async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
-
         guard let display = content.displays.first(where: { $0.displayID == virtualDisplayID }) else {
+            os_log("virtual display %u not in SCShareableContent (%d available)",
+                   log: renderLog, type: .error, virtualDisplayID, content.displays.count)
             throw SpatialRendererError.displayNotFound
         }
 
@@ -246,7 +273,28 @@ final class SpatialRenderer: NSObject, ObservableObject {
 extension SpatialRenderer: SCStreamOutput {
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .screen else { return }
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        // SCK delivers both real frames (status `.complete`, with a pixel
+        // buffer) and status-only buffers (`.idle`, `.blank`, `.suspended`)
+        // when the captured content isn't changing. An empty virtual display
+        // produces only status-only buffers, so we must skip them rather than
+        // assume every callback carries a frame.
+        let statusKey = SCStreamFrameInfo.status.rawValue as CFString
+        let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[CFString: Any]]
+        let status: SCFrameStatus = (attachments?.first?[statusKey] as? Int).flatMap(SCFrameStatus.init(rawValue:)) ?? .complete
+
+        if status != lastLoggedStatus {
+            os_log("SCK status=%{public}@", log: renderLog, type: .info, String(describing: status))
+            lastLoggedStatus = status
+        }
+
+        guard status == .complete, let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        if !firstCompleteFrameLogged {
+            firstCompleteFrameLogged = true
+            os_log("SCK first complete frame %dx%d", log: renderLog, type: .info,
+                   CVPixelBufferGetWidth(pixelBuffer), CVPixelBufferGetHeight(pixelBuffer))
+        }
 
         frameLock.lock()
         currentPixelBuffer = pixelBuffer
@@ -279,7 +327,19 @@ extension SpatialRenderer: MTKViewDelegate {
         let pixelBuffer = currentPixelBuffer
         frameLock.unlock()
 
-        guard let pixelBuffer else { return }
+        // Until the first complete frame arrives, draw a dark-grey background
+        // so the user can tell the renderer is alive even if SCK is only
+        // delivering "idle" status buffers (which happens on a brand-new
+        // virtual display with nothing on it yet).
+        guard let pixelBuffer else {
+            descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1)
+            guard let commandBuffer = commandQueue.makeCommandBuffer(),
+                  let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
+            encoder.endEncoding()
+            commandBuffer.present(drawable)
+            commandBuffer.commit()
+            return
+        }
 
         // Zero-copy: create MTLTexture from pixel buffer via CVMetalTextureCache
         let width = CVPixelBufferGetWidth(pixelBuffer)
@@ -336,4 +396,14 @@ enum SpatialRendererError: Error {
     case displayNotFound
     case metalSetupFailed
     case capturePermissionDenied
+}
+
+// MARK: - KeyableBorderlessWindow
+
+/// Borderless NSWindow that can become key/main. Required on macOS 26 Tahoe so
+/// MTKView receives active display-link callbacks; without this override the
+/// fragment shader runs once and then idles, leaving a black panel.
+private final class KeyableBorderlessWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
 }
