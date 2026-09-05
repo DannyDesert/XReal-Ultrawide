@@ -1,6 +1,32 @@
 import Foundation
 import ServiceManagement
 
+/// Resolution of the floating virtual monitor.
+enum SpatialResolution: String, CaseIterable, Codable {
+    case fhd1080, qhd1440
+
+    var width: UInt32 {
+        switch self {
+        case .fhd1080: return 1920
+        case .qhd1440: return 2560
+        }
+    }
+
+    var height: UInt32 {
+        switch self {
+        case .fhd1080: return 1080
+        case .qhd1440: return 1440
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .fhd1080: return "1920×1080 (sharpest text)"
+        case .qhd1440: return "2560×1440 (more space)"
+        }
+    }
+}
+
 /// Persists user preferences via UserDefaults.
 final class Settings: ObservableObject {
 
@@ -13,9 +39,12 @@ final class Settings: ObservableObject {
         static let wasEnabled = "displayWasEnabled"
         static let launchAtLogin = "launchAtLogin"
         static let spatialMode = "spatialModeEnabled"
-        static let sensitivity = "spatialSensitivity"
         static let smoothing = "spatialSmoothing"
         static let leanToZoom = "leanToZoomEnabled"
+        static let screenInches = "floatingScreenInches"
+        static let screenDistance = "floatingScreenDistance"
+        static let spatialResolution = "spatialResolution"
+        static let followMode = "followModeEnabled"
     }
 
     @Published var selectedResolution: DisplayResolution {
@@ -41,16 +70,28 @@ final class Settings: ObservableObject {
         didSet { defaults.set(spatialMode, forKey: Keys.spatialMode) }
     }
 
-    @Published var spatialSensitivity: SpatialSensitivity {
-        didSet { defaults.set(spatialSensitivity.rawValue, forKey: Keys.sensitivity) }
-    }
-
     @Published var spatialSmoothing: SpatialSmoothing {
         didSet { defaults.set(spatialSmoothing.rawValue, forKey: Keys.smoothing) }
     }
 
     @Published var leanToZoomEnabled: Bool {
         didSet { defaults.set(leanToZoomEnabled, forKey: Keys.leanToZoom) }
+    }
+
+    @Published var screenInches: Double {
+        didSet { defaults.set(screenInches, forKey: Keys.screenInches) }
+    }
+
+    @Published var screenDistance: Double {
+        didSet { defaults.set(screenDistance, forKey: Keys.screenDistance) }
+    }
+
+    @Published var spatialResolution: SpatialResolution {
+        didSet { defaults.set(spatialResolution.rawValue, forKey: Keys.spatialResolution) }
+    }
+
+    @Published var followModeEnabled: Bool {
+        didSet { defaults.set(followModeEnabled, forKey: Keys.followMode) }
     }
 
     private init() {
@@ -61,13 +102,22 @@ final class Settings: ObservableObject {
 
         self.spatialMode = defaults.bool(forKey: Keys.spatialMode)
 
-        let sensRaw = defaults.string(forKey: Keys.sensitivity) ?? SpatialSensitivity.medium.rawValue
-        self.spatialSensitivity = SpatialSensitivity(rawValue: sensRaw) ?? .medium
-
         let smoothRaw = defaults.string(forKey: Keys.smoothing) ?? SpatialSmoothing.balanced.rawValue
         self.spatialSmoothing = SpatialSmoothing(rawValue: smoothRaw) ?? .balanced
 
-        // Default lean-to-zoom to true on first launch
+        let inches = defaults.double(forKey: Keys.screenInches)
+        self.screenInches = inches > 0 ? inches : 65
+
+        let dist = defaults.double(forKey: Keys.screenDistance)
+        self.screenDistance = dist > 0 ? dist : 2.0
+
+        let resRawSpatial = defaults.string(forKey: Keys.spatialResolution) ?? SpatialResolution.fhd1080.rawValue
+        self.spatialResolution = SpatialResolution(rawValue: resRawSpatial) ?? .fhd1080
+
+        self.followModeEnabled = defaults.bool(forKey: Keys.followMode)
+
+        // On by default: the lean gesture is impulse-based, so it no longer
+        // fires from just looking up.
         if defaults.object(forKey: Keys.leanToZoom) == nil {
             self.leanToZoomEnabled = true
         } else {

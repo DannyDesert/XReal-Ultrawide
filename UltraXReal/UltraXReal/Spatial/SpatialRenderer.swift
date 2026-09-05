@@ -1,16 +1,25 @@
 import AppKit
 import Metal
 import MetalKit
+import simd
 import CoreMedia
 import CoreVideo
 import ScreenCaptureKit
 import Combine
+import os
 
-/// Viewport uniform data passed to the Metal fragment shader.
-struct ViewportUniforms {
-    var viewportOrigin: SIMD2<Float>  // normalized [0,1]
-    var viewportSize: SIMD2<Float>    // normalized [0,1]
+/// Uniform data passed to the Metal fragment shader.
+/// Layout must match FloatingUniforms in SpatialShaders.metal.
+struct FloatingUniforms {
+    var headMatrix: simd_float3x3     // view-space head rotation
+    var tanHalfFov: SIMD2<Float>      // glasses half-FOV tangents
+    var screenHalfSize: SIMD2<Float>  // floating screen half extents, meters
+    var distance: Float               // screen distance in meters
+    var _pad0: Float = 0
+    var _pad1: SIMD2<Float> = .zero
 }
+
+private let renderLog = OSLog(subsystem: "com.ultraxreal.app", category: "Renderer")
 
 /// Captures the virtual display via ScreenCaptureKit, applies head-tracking
 /// viewport transform in Metal, and renders to a fullscreen window on the XReal Air.
@@ -40,20 +49,36 @@ final class SpatialRenderer: NSObject, ObservableObject {
     private var currentPixelBuffer: CVPixelBuffer?
     private let frameLock = NSLock()
 
+    // Mipmapped copy of the captured frame. The raycast minifies the screen
+    // texture (a 65" screen at 2m covers a fraction of the FOV), and sampling
+    // the raw capture with a linear filter aliases badly — crawling text
+    // lines. Regenerating mips each frame + trilinear/aniso sampling fixes it.
+    private var mipTexture: MTLTexture?
+
     // FPS counter
     private var frameCount = 0
     private var fpsTimer: Timer?
 
-    // Canvas dimensions
+    // Diagnostics — only mutated from the capture queue, no lock needed.
+    private var firstCompleteFrameLogged = false
+    private var lastLoggedStatus: SCFrameStatus?
+
+    // Virtual monitor dimensions (pixels, what macOS renders)
     let canvasWidth: Int
     let canvasHeight: Int
-    let viewportWidth: Int = 1920
-    let viewportHeight: Int = 1080
+
+    // Floating screen geometry — updatable live from the menu sliders.
+    var screenDiagonalInches: Float = 65
+    var screenDistanceMeters: Float = 2.0
+
+    // XREAL Air 2 Pro: 46° diagonal FOV, 16:9 → ~40.5° horizontal.
+    private let tanHalfFovX: Float = 0.369
+    private let tanHalfFovY: Float = 0.369 * 1080.0 / 1920.0
 
     init(virtualDisplayID: CGDirectDisplayID,
          spatialTracker: SpatialTracker,
-         canvasWidth: Int = 3840,
-         canvasHeight: Int = 2160) {
+         canvasWidth: Int = 1920,
+         canvasHeight: Int = 1080) {
         self.virtualDisplayID = virtualDisplayID
         self.spatialTracker = spatialTracker
         self.canvasWidth = canvasWidth
@@ -157,7 +182,10 @@ final class SpatialRenderer: NSObject, ObservableObject {
             return false
         }
 
-        metalView = MTKView(frame: CGRect(origin: .zero, size: xrealScreen.frame.size),
+        let screenFrame = xrealScreen.frame
+        print("[Renderer] XReal screen frame=\(screenFrame)")
+
+        metalView = MTKView(frame: CGRect(origin: .zero, size: screenFrame.size),
                             device: metalDevice)
         metalView.delegate = self
         metalView.framebufferOnly = true
@@ -166,20 +194,36 @@ final class SpatialRenderer: NSObject, ObservableObject {
         metalView.isPaused = false
         metalView.enableSetNeedsDisplay = false
 
-        outputWindow = NSWindow(
-            contentRect: xrealScreen.frame,
+        // KeyableBorderlessWindow overrides canBecomeKey/Main → true so MTKView
+        // gets active draw callbacks on macOS 26 Tahoe (where the default `false`
+        // for borderless windows leaves the render loop suspended).
+        let window = KeyableBorderlessWindow(
+            contentRect: screenFrame,
             styleMask: [.borderless],
             backing: .buffered,
             defer: false,
             screen: xrealScreen
         )
-        outputWindow?.level = .screenSaver
-        outputWindow?.isOpaque = true
-        outputWindow?.backgroundColor = .black
-        outputWindow?.contentView = metalView
-        outputWindow?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        outputWindow?.makeKeyAndOrderFront(nil)
+        // Above the shielding window — guaranteed to sit on top of everything,
+        // including spaces transitions and Mission Control. `.screenSaver` was
+        // demoted on Tahoe and got clamped by the window server.
+        window.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)
+        window.isOpaque = true
+        window.backgroundColor = .black
+        window.hasShadow = false
+        window.contentView = metalView
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        window.isMovable = false
+        window.isExcludedFromWindowsMenu = true
+        window.makeKeyAndOrderFront(nil)
 
+        // Force frame *after* orderFront — Tahoe re-clamps borderless windows
+        // whose initial contentRect has negative origins (XReal Air sits at
+        // global Cocoa coords like (-408, -1080) in our setup). Without this
+        // the window lands on the built-in display as a thin strip.
+        window.setFrame(screenFrame, display: true)
+
+        outputWindow = window
         return true
     }
 
@@ -210,8 +254,9 @@ final class SpatialRenderer: NSObject, ObservableObject {
 
     private func startCapture() async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
-
         guard let display = content.displays.first(where: { $0.displayID == virtualDisplayID }) else {
+            os_log("virtual display %u not in SCShareableContent (%d available)",
+                   log: renderLog, type: .error, virtualDisplayID, content.displays.count)
             throw SpatialRendererError.displayNotFound
         }
 
@@ -246,7 +291,28 @@ final class SpatialRenderer: NSObject, ObservableObject {
 extension SpatialRenderer: SCStreamOutput {
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .screen else { return }
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        // SCK delivers both real frames (status `.complete`, with a pixel
+        // buffer) and status-only buffers (`.idle`, `.blank`, `.suspended`)
+        // when the captured content isn't changing. An empty virtual display
+        // produces only status-only buffers, so we must skip them rather than
+        // assume every callback carries a frame.
+        let statusKey = SCStreamFrameInfo.status.rawValue as CFString
+        let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[CFString: Any]]
+        let status: SCFrameStatus = (attachments?.first?[statusKey] as? Int).flatMap(SCFrameStatus.init(rawValue:)) ?? .complete
+
+        if status != lastLoggedStatus {
+            os_log("SCK status=%{public}@", log: renderLog, type: .info, String(describing: status))
+            lastLoggedStatus = status
+        }
+
+        guard status == .complete, let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        if !firstCompleteFrameLogged {
+            firstCompleteFrameLogged = true
+            os_log("SCK first complete frame %dx%d", log: renderLog, type: .info,
+                   CVPixelBufferGetWidth(pixelBuffer), CVPixelBufferGetHeight(pixelBuffer))
+        }
 
         frameLock.lock()
         currentPixelBuffer = pixelBuffer
@@ -279,7 +345,19 @@ extension SpatialRenderer: MTKViewDelegate {
         let pixelBuffer = currentPixelBuffer
         frameLock.unlock()
 
-        guard let pixelBuffer else { return }
+        // Until the first complete frame arrives, draw a dark-grey background
+        // so the user can tell the renderer is alive even if SCK is only
+        // delivering "idle" status buffers (which happens on a brand-new
+        // virtual display with nothing on it yet).
+        guard let pixelBuffer else {
+            descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1)
+            guard let commandBuffer = commandQueue.makeCommandBuffer(),
+                  let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
+            encoder.endEncoding()
+            commandBuffer.present(drawable)
+            commandBuffer.commit()
+            return
+        }
 
         // Zero-copy: create MTLTexture from pixel buffer via CVMetalTextureCache
         let width = CVPixelBufferGetWidth(pixelBuffer)
@@ -295,31 +373,55 @@ extension SpatialRenderer: MTKViewDelegate {
               let cvTex = cvTexture,
               let texture = CVMetalTextureGetTexture(cvTex) else { return }
 
-        // Compute viewport uniforms from spatial tracker state
+        if mipTexture == nil || mipTexture!.width != width || mipTexture!.height != height {
+            let desc = MTLTextureDescriptor.texture2DDescriptor(
+                pixelFormat: .bgra8Unorm, width: width, height: height, mipmapped: true)
+            desc.usage = [.shaderRead, .renderTarget]
+            desc.storageMode = .private
+            mipTexture = metalDevice.makeTexture(descriptor: desc)
+        }
+        guard let mipTexture else { return }
+
+        // Compute uniforms from tracker state + screen geometry.
         let state = spatialTracker.state
 
-        let canvasW = Float(canvasWidth)
-        let canvasH = Float(canvasHeight)
-        let zoomedW = Float(viewportWidth) / Float(state.zoomLevel)
-        let zoomedH = Float(viewportHeight) / Float(state.zoomLevel)
+        // Diagonal inches → physical extents in meters (16:9).
+        let diagMeters = screenDiagonalInches * 0.0254
+        let aspectNorm = Float((16.0 * 16.0 + 9.0 * 9.0).squareRoot())
+        let halfW = diagMeters * 16.0 / aspectNorm / 2.0
+        let halfH = diagMeters * 9.0 / aspectNorm / 2.0
 
-        let originX = Float(state.viewportOffset.x) / canvasW
-        let originY = Float(state.viewportOffset.y) / canvasH
+        // Lean-zoom brings the screen closer instead of cropping pixels.
+        let distance = screenDistanceMeters / Float(state.zoomLevel)
 
-        var uniforms = ViewportUniforms(
-            viewportOrigin: SIMD2<Float>(originX, originY),
-            viewportSize: SIMD2<Float>(zoomedW / canvasW, zoomedH / canvasH)
+        var uniforms = FloatingUniforms(
+            headMatrix: state.headMatrix,
+            tanHalfFov: SIMD2<Float>(tanHalfFovX, tanHalfFovY),
+            screenHalfSize: SIMD2<Float>(halfW, halfH),
+            distance: distance
         )
 
         // Render
         descriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
+
+        // Copy the captured frame into the mip chain and regenerate levels.
+        if let blit = commandBuffer.makeBlitCommandEncoder() {
+            blit.copy(from: texture, sourceSlice: 0, sourceLevel: 0,
+                      sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+                      sourceSize: MTLSize(width: width, height: height, depth: 1),
+                      to: mipTexture, destinationSlice: 0, destinationLevel: 0,
+                      destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0))
+            blit.generateMipmaps(for: mipTexture)
+            blit.endEncoding()
+        }
+
+        guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
 
         encoder.setRenderPipelineState(pipelineState)
-        encoder.setFragmentTexture(texture, index: 0)
-        encoder.setFragmentBytes(&uniforms, length: MemoryLayout<ViewportUniforms>.size, index: 0)
+        encoder.setFragmentTexture(mipTexture, index: 0)
+        encoder.setFragmentBytes(&uniforms, length: MemoryLayout<FloatingUniforms>.stride, index: 0)
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         encoder.endEncoding()
 
@@ -336,4 +438,14 @@ enum SpatialRendererError: Error {
     case displayNotFound
     case metalSetupFailed
     case capturePermissionDenied
+}
+
+// MARK: - KeyableBorderlessWindow
+
+/// Borderless NSWindow that can become key/main. Required on macOS 26 Tahoe so
+/// MTKView receives active display-link callbacks; without this override the
+/// fragment shader runs once and then idles, leaving a black panel.
+private final class KeyableBorderlessWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
 }

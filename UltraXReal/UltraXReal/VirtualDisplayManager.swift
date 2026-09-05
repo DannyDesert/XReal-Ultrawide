@@ -78,7 +78,10 @@ final class VirtualDisplayManager: ObservableObject {
         descriptor.productID = 0x5679  // Different product ID to distinguish from static mode
         descriptor.serialNum = 2
         descriptor.name = "UltraXReal Spatial"
-        descriptor.sizeInMillimeters = CGSize(width: 597, height: 336)  // 27" equivalent, SCK-safe
+        // 55" equivalent (~81 PPI at 4K). Must stay below ~110 PPI or macOS
+        // treats the canvas as HiDPI and gives it a scaled 1920x1080 desktop —
+        // the viewport then shows a quarter of a 1080p screen at 200%.
+        descriptor.sizeInMillimeters = CGSize(width: 1194, height: 672)
         descriptor.maxPixelsWide = width
         descriptor.maxPixelsHigh = height
         descriptor.queue = displayQueue
@@ -111,10 +114,33 @@ final class VirtualDisplayManager: ObservableObject {
 
         let displayID = display.displayID
 
+        // macOS gives the new display a default ~1080p mode; explicitly switch
+        // to the requested full-size mode or the canvas renders at a quarter
+        // of its intended area (and the viewport looks 2x zoomed in).
+        setCurrentMode(displayID: displayID, pixelsWide: Int(width), pixelsHigh: Int(height))
+
         DispatchQueue.main.async { [weak self] in
             self?.virtualDisplay = display
             self?.isActive = true
             self?.currentDisplayID = displayID
+        }
+    }
+
+    private func setCurrentMode(displayID: CGDirectDisplayID, pixelsWide: Int, pixelsHigh: Int) {
+        guard let modes = CGDisplayCopyAllDisplayModes(displayID, nil) as? [CGDisplayMode],
+              let native = modes.first(where: { $0.pixelWidth == pixelsWide && $0.pixelHeight == pixelsHigh })
+        else {
+            print("Warning: \(pixelsWide)x\(pixelsHigh) mode not found on display \(displayID)")
+            return
+        }
+        guard CGDisplayCopyDisplayMode(displayID)?.pixelWidth != pixelsWide else { return }
+
+        var config: CGDisplayConfigRef?
+        guard CGBeginDisplayConfiguration(&config) == .success else { return }
+        CGConfigureDisplayWithDisplayMode(config, displayID, native, nil)
+        let result = CGCompleteDisplayConfiguration(config, .forSession)
+        if result != .success {
+            print("Warning: failed to set \(pixelsWide)x\(pixelsHigh) mode: \(result.rawValue)")
         }
     }
 

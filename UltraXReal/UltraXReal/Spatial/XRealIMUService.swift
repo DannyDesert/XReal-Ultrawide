@@ -13,6 +13,12 @@ final class XRealIMUService: ObservableObject {
 
     let orientationSubject = PassthroughSubject<simd_quatf, Never>()
 
+    /// Gravity-removed acceleration in the earth NED frame, in g.
+    let accelerationSubject = PassthroughSubject<SIMD3<Float>, Never>()
+
+    /// The "zero" orientation captured by recenter(); identity until then.
+    var referenceOrientation: simd_quatf { referenceQuat }
+
     private var device: UnsafeMutablePointer<device_imu_type>?
     private var readQueue: DispatchQueue?
     private var isRunning = false
@@ -40,52 +46,65 @@ final class XRealIMUService: ObservableObject {
     }
 
     /// Open the HID connection and start reading IMU data on a background thread.
+    /// Retries the open (and reopens after USB re-enumeration) while running —
+    /// the glasses briefly drop their HID interfaces when the display topology
+    /// changes, e.g. right after the spatial canvas is created or mirroring toggles.
     func start() {
         guard !isRunning else { return }
 
-        device = UnsafeMutablePointer<device_imu_type>.allocate(capacity: 1)
-        device!.initialize(to: device_imu_type())
+        isRunning = true
+        readQueue = DispatchQueue(label: "com.ultraxreal.imu", qos: .userInteractive)
+        readQueue?.async { [weak self] in
+            self?.connectLoop()
+        }
+    }
 
-        // Store unretained pointer to self for the C callback
-        callbackContext = Unmanaged.passUnretained(self).toOpaque()
+    private func connectLoop() {
+        while isRunning {
+            let dev = UnsafeMutablePointer<device_imu_type>.allocate(capacity: 1)
+            dev.initialize(to: device_imu_type())
 
-        let err = device_imu_open(device!, { timestamp, event, ahrs in
-            // This C callback is invoked from the HID read thread.
-            // We don't use it directly — we poll orientation after each read.
-        })
+            let err = device_imu_open(dev, { timestamp, event, ahrs in
+                // This C callback is invoked from the HID read thread.
+                // We don't use it directly — we poll orientation after each read.
+            })
 
-        if err != DEVICE_IMU_ERROR_NO_ERROR {
-            print("[IMU] Failed to open device: error \(err.rawValue)")
-            device?.deallocate()
-            device = nil
-            callbackContext = nil
+            if err != DEVICE_IMU_ERROR_NO_ERROR {
+                print("[IMU] Failed to open device: error \(err.rawValue) — retrying in 1s")
+                dev.deallocate()
+                Thread.sleep(forTimeInterval: 1.0)
+                continue
+            }
+
+            device = dev
+            DispatchQueue.main.async { [weak self] in
+                self?.isConnected = true
+            }
+
+            readLoop()
+
+            // readLoop returned: either stop() was requested or the device
+            // unplugged (USB re-enumeration). Close and, if still running, reconnect.
+            if let d = device {
+                device_imu_close(d)
+                d.deallocate()
+                device = nil
+            }
             DispatchQueue.main.async { [weak self] in
                 self?.isConnected = false
             }
-            return
-        }
 
-        isRunning = true
-        DispatchQueue.main.async { [weak self] in
-            self?.isConnected = true
-        }
-
-        readQueue = DispatchQueue(label: "com.ultraxreal.imu", qos: .userInteractive)
-        readQueue?.async { [weak self] in
-            self?.readLoop()
+            if isRunning {
+                print("[IMU] Device lost — reconnecting")
+                Thread.sleep(forTimeInterval: 1.0)
+            }
         }
     }
 
     /// Stop reading and close the HID connection.
+    /// The connect loop owns the device handle and closes it on exit.
     func stop() {
         isRunning = false
-
-        if let dev = device {
-            device_imu_close(dev)
-            dev.deallocate()
-            device = nil
-        }
-
         callbackContext = nil
 
         DispatchQueue.main.async { [weak self] in
@@ -116,11 +135,7 @@ final class XRealIMUService: ObservableObject {
 
             if err == DEVICE_IMU_ERROR_UNPLUGGED {
                 print("[IMU] Device unplugged")
-                DispatchQueue.main.async { [weak self] in
-                    self?.isConnected = false
-                    self?.isRunning = false
-                }
-                return
+                return // connectLoop will close the handle and reconnect
             }
 
             if err == DEVICE_IMU_ERROR_NO_ERROR, let ahrs = dev.pointee.ahrs {
@@ -131,6 +146,9 @@ final class XRealIMUService: ObservableObject {
                     self?.orientation = quat
                 }
                 orientationSubject.send(quat)
+
+                let a = device_imu_get_earth_acceleration(ahrs)
+                accelerationSubject.send(SIMD3<Float>(a.x, a.y, a.z))
             }
         }
     }
