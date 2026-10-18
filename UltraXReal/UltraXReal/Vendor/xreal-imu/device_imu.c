@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "Fusion.h"
+#include "cal_json.h"
 
 #include <libkern/OSByteOrder.h>
 #include <machine/endian.h>
@@ -310,33 +311,84 @@ device_imu_error_type device_imu_open(device_imu_type *device, device_imu_event_
 		return DEVICE_IMU_ERROR_PAYLOAD_FAILED;
 	}
 
-	// Read calibration data from device but skip JSON parsing (no json-c dependency).
-	// The Madgwick AHRS filter converges within seconds using identity calibration.
+	// Stream the factory calibration JSON blob from device flash, parse it, and
+	// populate device->calibration so apply_calibration() can use real per-unit
+	// gyro/accel/mag biases instead of falling back to identity (which leaves
+	// ~1°/s of yaw drift on a typical XReal Air unit).
 	uint32_t calibration_len = 0;
-	if (recv_payload_msg(device, DEVICE_IMU_MSG_GET_CAL_DATA_LENGTH, 4, (uint8_t *)&calibration_len))
+	if (recv_payload_msg(device, DEVICE_IMU_MSG_GET_CAL_DATA_LENGTH, 4, (uint8_t *)&calibration_len) &&
+	    calibration_len > 0 && calibration_len < (1u << 20))  // 1 MiB sanity cap
 	{
-		// Drain calibration segments from device to keep protocol in sync
-		uint32_t position = 0;
-		uint8_t discard_buf[56];
-		while (position < calibration_len)
+		uint8_t *cal_buf = (uint8_t *)malloc((size_t)calibration_len + 1);
+		if (cal_buf)
 		{
-			const uint32_t remaining = (calibration_len - position);
-
-			if (!send_payload_msg(device, DEVICE_IMU_MSG_CAL_DATA_GET_NEXT_SEGMENT, 0, NULL))
+			uint32_t position = 0;
+			bool ok = true;
+			while (position < calibration_len)
 			{
-				break;
+				const uint32_t remaining = (calibration_len - position);
+
+				if (!send_payload_msg(device, DEVICE_IMU_MSG_CAL_DATA_GET_NEXT_SEGMENT, 0, NULL))
+				{
+					ok = false;
+					break;
+				}
+
+				const uint8_t next = (remaining > 56 ? 56 : remaining);
+
+				if (!recv_payload_msg(device, DEVICE_IMU_MSG_CAL_DATA_GET_NEXT_SEGMENT, next, cal_buf + position))
+				{
+					ok = false;
+					break;
+				}
+
+				position += next;
 			}
 
-			const uint8_t next = (remaining > 56 ? 56 : remaining);
-
-			if (!recv_payload_msg(device, DEVICE_IMU_MSG_CAL_DATA_GET_NEXT_SEGMENT, next, discard_buf))
+			if (ok && position == calibration_len)
 			{
-				break;
+				cal_buf[calibration_len] = '\0';
+
+				// Dump the raw JSON once for empirical verification — only
+				// if the env var is set, so production doesn't litter logs.
+				const char *dump = getenv("ULTRAXREAL_DUMP_CAL");
+				if (dump && *dump)
+				{
+					FILE *f = fopen(dump, "wb");
+					if (f) { fwrite(cal_buf, 1, calibration_len, f); fclose(f); }
+				}
+
+				cal_json_data parsed;
+				if (cal_json_parse((const char *)cal_buf, calibration_len, &parsed))
+				{
+					if (parsed.gyro_bias_present)
+						memcpy(device->calibration->gyroscopeOffset.array, parsed.gyro_bias, sizeof(parsed.gyro_bias));
+					if (parsed.gyro_scale_present)
+						memcpy(device->calibration->gyroscopeSensitivity.array, parsed.gyro_scale, sizeof(parsed.gyro_scale));
+					if (parsed.gyro_misalignment_present)
+						memcpy(device->calibration->gyroscopeMisalignment.array, parsed.gyro_misalignment, sizeof(parsed.gyro_misalignment));
+
+					if (parsed.acc_bias_present)
+						memcpy(device->calibration->accelerometerOffset.array, parsed.acc_bias, sizeof(parsed.acc_bias));
+					if (parsed.acc_scale_present)
+						memcpy(device->calibration->accelerometerSensitivity.array, parsed.acc_scale, sizeof(parsed.acc_scale));
+					if (parsed.acc_misalignment_present)
+						memcpy(device->calibration->accelerometerMisalignment.array, parsed.acc_misalignment, sizeof(parsed.acc_misalignment));
+
+					if (parsed.mag_bias_present)
+						memcpy(device->calibration->magnetometerOffset.array, parsed.mag_bias, sizeof(parsed.mag_bias));
+					if (parsed.mag_scale_present)
+						memcpy(device->calibration->magnetometerSensitivity.array, parsed.mag_scale, sizeof(parsed.mag_scale));
+					if (parsed.mag_misalignment_present)
+						memcpy(device->calibration->magnetometerMisalignment.array, parsed.mag_misalignment, sizeof(parsed.mag_misalignment));
+
+					if (parsed.noises_present)
+						memcpy(device->calibration->noises.array, parsed.noises, sizeof(parsed.noises));
+				}
 			}
 
-			position += next;
+			free(cal_buf);
 		}
-		// Calibration data discarded — using reset (identity) calibration
 	}
 
 	if (!send_payload_msg_signal(device, DEVICE_IMU_MSG_START_IMU_DATA, 0x1))

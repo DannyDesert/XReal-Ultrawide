@@ -67,5 +67,6 @@
 #include "Vendor/xreal-imu/device.h"
 #include "Vendor/xreal-imu/device_imu.h"
 #include "Vendor/xreal-imu/hid_ids.h"
+#include "Vendor/fusion/FusionOffset.h"
 
 #endif /* CGVirtualDisplay_Bridge_h */

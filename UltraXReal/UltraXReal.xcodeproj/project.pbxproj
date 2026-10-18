@@ -27,6 +27,7 @@
 		B10000010000000000000031 /* device_imu.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000031 /* device_imu.c */; };
 		B10000010000000000000032 /* hid_ids.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000032 /* hid_ids.c */; };
 		B10000010000000000000033 /* crc32.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000033 /* crc32.c */; };
+		B10000010000000000000038 /* cal_json.c in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000038 /* cal_json.c */; };
 		B1F000010000000000000001 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F000010000000000000001 /* IOKit.framework */; };
 		B1F000010000000000000002 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F000010000000000000002 /* Metal.framework */; };
 		B1F000010000000000000003 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F000010000000000000003 /* MetalKit.framework */; };
@@ -68,6 +69,8 @@
 		B20000010000000000000031 /* device_imu.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = device_imu.c; sourceTree = "<group>"; };
 		B20000010000000000000032 /* hid_ids.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hid_ids.c; sourceTree = "<group>"; };
 		B20000010000000000000033 /* crc32.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crc32.c; sourceTree = "<group>"; };
+		B20000010000000000000038 /* cal_json.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cal_json.c; sourceTree = "<group>"; };
+		B20000010000000000000039 /* cal_json.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cal_json.h; sourceTree = "<group>"; };
 		B20000010000000000000034 /* device.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = device.h; sourceTree = "<group>"; };
 		B20000010000000000000035 /* device_imu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = device_imu.h; sourceTree = "<group>"; };
 		B20000010000000000000036 /* hid_ids.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hid_ids.h; sourceTree = "<group>"; };
@@ -197,6 +200,8 @@
 				B20000010000000000000035 /* device_imu.h */,
 				B20000010000000000000036 /* hid_ids.h */,
 				B20000010000000000000037 /* crc32.h */,
+				B20000010000000000000039 /* cal_json.h */,
+				B20000010000000000000038 /* cal_json.c */,
 				B20000010000000000000030 /* device.c */,
 				B20000010000000000000031 /* device_imu.c */,
 				B20000010000000000000032 /* hid_ids.c */,
@@ -292,6 +297,7 @@
 				B10000010000000000000031 /* device_imu.c in Sources */,
 				B10000010000000000000032 /* hid_ids.c in Sources */,
 				B10000010000000000000033 /* crc32.c in Sources */,
+				B10000010000000000000038 /* cal_json.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
